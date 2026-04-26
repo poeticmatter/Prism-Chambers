@@ -11,12 +11,13 @@ export function scanRoom(s: GameState) {
 
   for (let i = 0; i < slot.card.code.length; i++) {
     if (slot.card.revealedIndices.includes(i)) continue;
-    if (loc.revealedIndices.includes(i)) continue;
     if (slot.card.code[i] === loc.code[i]) {
       hadMatch = true;
-      s.crystals[slot.card.code[i]]++;
       slot.card.revealedIndices.push(i);
-      loc.revealedIndices.push(i);
+      if (!loc.revealedIndices.includes(i)) {
+        loc.revealedIndices.push(i);
+        s.crystals[slot.card.code[i]]++;
+      }
     }
   }
 
@@ -45,6 +46,7 @@ export function placeCard(s: GameState, x: number, y: number) {
   const cardIdx = sourceArr.findIndex(c => c.id === s.selectedCardId);
   if (cardIdx !== -1) {
     const card = sourceArr[cardIdx];
+    card.revealedIndices = [];
     sourceArr.splice(cardIdx, 1);
     s.board[y][x] = { card, scanned: false };
     s.selectedCardId = null;
