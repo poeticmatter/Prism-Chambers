@@ -1,5 +1,5 @@
 import { GameState, Card } from '../types';
-import { countMatches } from './CoreSystem';
+import { positionMatchCount } from './CoreSystem';
 
 export function getGlobalDoor(card: Card, globalDir: number) {
   const localDir = (globalDir - card.rotation + 4) % 4;
@@ -36,7 +36,7 @@ export function tryMove(s: GameState, targetX: number, targetY: number): boolean
     const oldLoc = s.locations[py][px];
 
     const isCentral = px === 1 && py === 1;
-    if (isCentral || countMatches(oldSlot.card.code, oldLoc.code) !== 3) {
+    if (isCentral || positionMatchCount(oldSlot.card.code, oldLoc.code) !== 2) {
       s.board[py][px] = null;
       s.hand.push(oldSlot.card);
     }

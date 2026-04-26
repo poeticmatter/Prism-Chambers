@@ -1,5 +1,5 @@
-import { GameState, ColorStr } from '../types';
-import { countMatches } from './CoreSystem';
+import { GameState } from '../types';
+import { positionMatchCount } from './CoreSystem';
 
 export function scanRoom(s: GameState) {
   const { x, y } = s.playerPos;
@@ -7,20 +7,16 @@ export function scanRoom(s: GameState) {
   if (!slot) return;
 
   const loc = s.locations[y][x];
-  const locCode = [...loc.code];
-  loc.revealedIndices.forEach(i => { locCode[i] = 'U' as unknown as ColorStr; });
-
   let hadMatch = false;
-  for (let cIdx = 0; cIdx < slot.card.code.length; cIdx++) {
-    if (slot.card.revealedIndices.includes(cIdx)) continue;
-    const c = slot.card.code[cIdx];
-    const lIdx = locCode.indexOf(c);
-    if (lIdx !== -1) {
+
+  for (let i = 0; i < slot.card.code.length; i++) {
+    if (slot.card.revealedIndices.includes(i)) continue;
+    if (loc.revealedIndices.includes(i)) continue;
+    if (slot.card.code[i] === loc.code[i]) {
       hadMatch = true;
-      s.crystals[c]++;
-      locCode[lIdx] = 'U' as unknown as ColorStr;
-      slot.card.revealedIndices.push(cIdx);
-      loc.revealedIndices.push(lIdx);
+      s.crystals[slot.card.code[i]]++;
+      slot.card.revealedIndices.push(i);
+      loc.revealedIndices.push(i);
     }
   }
 
@@ -31,7 +27,7 @@ export function scanRoom(s: GameState) {
 export function openTrapDoor(s: GameState) {
   const curSlot = s.board[1][1];
   if (curSlot) {
-    if (countMatches(curSlot.card.code, s.locations[1][1].code) === 3) {
+    if (positionMatchCount(curSlot.card.code, s.locations[1][1].code) === 2) {
       s.gameState = 'won';
     } else {
       s.gameState = 'lost';
