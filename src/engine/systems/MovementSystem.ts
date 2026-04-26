@@ -37,7 +37,6 @@ export function tryMove(s: GameState, targetX: number, targetY: number): boolean
 
     const isCentral = px === 1 && py === 1;
     if (isCentral || positionMatchCount(oldSlot.card.code, oldLoc.code) !== 2) {
-      oldSlot.card.revealedIndices = [];
       s.board[py][px] = null;
       s.hand.push(oldSlot.card);
     }

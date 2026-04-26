@@ -46,7 +46,6 @@ export function placeCard(s: GameState, x: number, y: number) {
   const cardIdx = sourceArr.findIndex(c => c.id === s.selectedCardId);
   if (cardIdx !== -1) {
     const card = sourceArr[cardIdx];
-    card.revealedIndices = [];
     sourceArr.splice(cardIdx, 1);
     s.board[y][x] = { card, scanned: false };
     s.selectedCardId = null;
