@@ -11,6 +11,7 @@ export function CardsInHand() {
   const hand = useStore(useShallow(state => state.hand));
   const selectedCardId = useStore(state => state.selectedCardId);
   const handleCardClick = useStore(state => state.actions.handleCardClick);
+  const rotateCard = useStore(state => state.actions.rotateCard);
 
   return (
     <div>
@@ -41,8 +42,7 @@ export function CardsInHand() {
                     <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Delegate to same action logic
-                          handleCardClick(card.id, 'hand');
+                          rotateCard(card.id);
                         }}
                         className="absolute bottom-1 right-1 p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
                     >

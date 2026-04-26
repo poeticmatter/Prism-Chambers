@@ -10,6 +10,7 @@ interface GameStore extends GameState {
   actions: {
     restartGame: () => void;
     handleCardClick: (cardId: string, source: 'hand') => void;
+    rotateCard: (cardId: string) => void;
     handleCellClick: (x: number, y: number) => void;
     fireLaser: (dir: number) => void;
     scanRoom: () => void;
@@ -23,6 +24,11 @@ export const useStore = create<GameStore>((set, get) => ({
 
   actions: {
     restartGame: () => set(createInitialState()),
+
+    rotateCard: (cardId: string) =>
+      set(produce((draft: GameState) => {
+        rotateCardInHand(draft, cardId);
+      })),
 
     handleCardClick: (cardId: string, source: 'hand') =>
       set(produce((draft: GameState) => {
