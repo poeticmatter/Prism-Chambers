@@ -9,8 +9,7 @@ import { scanRoom, openTrapDoor, rotateCardInHand, placeCard } from './systems/I
 interface GameStore extends GameState {
   actions: {
     restartGame: () => void;
-    selectCard: (cardId: string, source: 'hand') => void;
-    rotateCard: (cardId: string) => void;
+    handleCardClick: (cardId: string, source: 'hand') => void;
     handleCellClick: (x: number, y: number) => void;
     fireLaser: (dir: number) => void;
     scanRoom: () => void;
@@ -25,16 +24,15 @@ export const useStore = create<GameStore>((set, get) => ({
   actions: {
     restartGame: () => set(createInitialState()),
 
-    selectCard: (cardId: string, source: 'hand') =>
+    handleCardClick: (cardId: string, source: 'hand') =>
       set(produce((draft: GameState) => {
-        draft.selectedCardId = cardId;
-        draft.selectedCardSource = source;
-        draft.laserSelectedColor = null;
-      })),
-
-    rotateCard: (cardId: string) =>
-      set(produce((draft: GameState) => {
-        rotateCardInHand(draft, cardId);
+        if (draft.selectedCardId === cardId) {
+          rotateCardInHand(draft, cardId);
+        } else {
+          draft.selectedCardId = cardId;
+          draft.selectedCardSource = source;
+          draft.laserSelectedColor = null;
+        }
       })),
 
     handleCellClick: (x: number, y: number) =>

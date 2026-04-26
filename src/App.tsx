@@ -8,10 +8,6 @@ import { CardsInHand, HandProgress } from './components/hud/CardsInHand';
 import { GameEndOverlay } from './components/overlays/GameEndOverlay';
 
 export default function App() {
-  const gameState = useStore(state => state.gameState); // Ensure init happened before rendering much else.
-
-  if (!gameState) return <div>Loading...</div>;
-
   return (
     <div className="min-h-screen bg-[#0f172a] text-[#e2e8f0] font-sans selection:bg-sky-500/30 overflow-x-hidden">
       <div className="flex flex-col lg:flex-row h-full w-full p-6 lg:space-x-6 max-w-[1200px] mx-auto min-h-screen">

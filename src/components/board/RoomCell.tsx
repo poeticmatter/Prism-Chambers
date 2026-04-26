@@ -1,13 +1,12 @@
 import React from 'react';
 import { useStore } from '../../engine/store';
-import { useShallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '../../lib/utils';
 import { SlotInfo } from './SlotInfo';
 import { RoomCard } from './RoomCard';
 import { LaserOverlay } from './LaserOverlay';
 
 export interface RoomCellProps {
-  key?: React.Key;
   x: number;
   y: number;
 }

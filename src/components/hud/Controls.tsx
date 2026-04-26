@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../../engine/store';
-import { useShallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '../../lib/utils';
 import { ColorStr } from '../../engine/types';
 
@@ -8,17 +8,16 @@ export function Controls() {
   const selectedCardId = useStore(state => state.selectedCardId);
   const laserSelectedColor = useStore(state => state.laserSelectedColor);
   const playerPos = useStore(useShallow(state => state.playerPos));
-  const handLength = useStore(state => state.hand.length);
+  const hand = useStore(useShallow(state => state.hand));
   const crystals = useStore(useShallow(state => state.crystals));
 
-  const selectCard = useStore(state => state.actions.selectCard);
+  const handleCardClick = useStore(state => state.actions.handleCardClick);
   const selectLaserColor = useStore(state => state.actions.selectLaserColor);
   const openTrapDoor = useStore(state => state.actions.openTrapDoor);
 
   const handlePlayCard = () => {
-    if (!selectedCardId && handLength > 0) {
-        const firstCardId = useStore.getState().hand[0].id;
-        selectCard(firstCardId, 'hand');
+    if (!selectedCardId && hand.length > 0) {
+        handleCardClick(hand[0].id, 'hand');
     }
   };
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, Location } from '../../engine/types';
 import { cn } from '../../lib/utils';
-import { BorderColorMap, ColorMap } from '../utils';
+import { ColorMap } from '../utils';
+import { CardDoors } from './CardDoors';
 
 interface RoomCardProps {
   card: Card;
@@ -33,20 +34,7 @@ export function RoomCard({
     )}>
 
       {/* Doors defined in local N E S W */}
-      {card.doors.map((door, i) => {
-        const transformedDir = (i + card.rotation) % 4; // Visual rotation
-        return (
-          <div key={i} className={cn(
-              "absolute z-10 transition-all",
-              door.isOpen ? cn("bg-transparent border-2 border-dashed shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]", BorderColorMap[door.color]) : cn("border border-white/20 shadow-sm", ColorMap[door.color]),
-              // Positioning and sizing doors
-              transformedDir === 0 && "top-[-6px] left-1/2 -translate-x-1/2 w-[32px] h-[10px] rounded-[3px]",
-              transformedDir === 1 && "right-[-6px] top-1/2 -translate-y-1/2 w-[10px] h-[32px] rounded-[3px]",
-              transformedDir === 2 && "bottom-[-6px] left-1/2 -translate-x-1/2 w-[32px] h-[10px] rounded-[3px]",
-              transformedDir === 3 && "left-[-6px] top-1/2 -translate-y-1/2 w-[10px] h-[32px] rounded-[3px]",
-          )} />
-        )
-      })}
+      <CardDoors card={card} />
 
       <div className="absolute inset-0 flex flex-col items-center p-3">
         <div className="text-[10px] uppercase tracking-wider opacity-60 mb-1 pointer-events-none text-slate-300">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../../engine/store';
-import { useShallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '../../lib/utils';
 import { ColorStr } from '../../engine/types';
 import { COLORS } from '../../engine/systems/CoreSystem';

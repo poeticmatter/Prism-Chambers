@@ -1,17 +1,16 @@
 import React from 'react';
 import { useStore } from '../../engine/store';
-import { useShallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '../../lib/utils';
-import { RoomCard } from '../board/RoomCard';
 import { RotateCw } from 'lucide-react';
 import { ColorStr } from '../../engine/types';
-import { ColorMap, BorderColorMap } from '../utils';
+import { ColorMap } from '../utils';
+import { CardDoors } from '../board/CardDoors';
 
 export function CardsInHand() {
   const hand = useStore(useShallow(state => state.hand));
   const selectedCardId = useStore(state => state.selectedCardId);
-  const selectCard = useStore(state => state.actions.selectCard);
-  const rotateCard = useStore(state => state.actions.rotateCard);
+  const handleCardClick = useStore(state => state.actions.handleCardClick);
 
   return (
     <div>
@@ -21,25 +20,13 @@ export function CardsInHand() {
               <div key={card.id} className="flex flex-col items-center gap-2">
                   <span className="text-[10px] font-mono text-slate-500">#{idx.toString().padStart(2, '0')}</span>
                   <div
-                    onClick={() => selectCard(card.id, 'hand')}
+                    onClick={() => handleCardClick(card.id, 'hand')}
                     className={cn(
                         "relative w-16 h-16 bg-[#1e293b]/80 rounded border border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:border-slate-500 shrink-0 transform transition-transform hover:scale-105",
                         selectedCardId === card.id && "border-sky-500 ring-2 ring-sky-500 bg-sky-900/20 shadow-[0_0_15px_rgba(56,189,248,0.3)]"
                     )}
                   >
-                    {card.doors.map((d, j) => {
-                        const td = (j + card.rotation) % 4;
-                        return (
-                          <div key={j} className={cn(
-                              "absolute rounded-[1px]",
-                              d.isOpen ? cn("border border-dashed border-opacity-50 shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]", BorderColorMap[d.color]) : cn("border border-white/20 shadow-sm", ColorMap[d.color]),
-                              td === 0 && "top-[-4px] left-[22px] w-5 h-[5px] rounded-[2px]",
-                              td === 1 && "right-[-4px] top-[22px] w-[5px] h-5 rounded-[2px]",
-                              td === 2 && "bottom-[-4px] left-[22px] w-5 h-[5px] rounded-[2px]",
-                              td === 3 && "left-[-4px] top-[22px] w-[5px] h-5 rounded-[2px]",
-                          )} />
-                        )
-                    })}
+                    <CardDoors card={card} sizeMultiplier={0.6} />
                     <div className="flex gap-1 mt-1 mx-1 flex-wrap justify-center pointer-events-none">
                         {card.code.map((c, j) => {
                             const isRevealed = card.revealedIndices.includes(j);
@@ -54,7 +41,8 @@ export function CardsInHand() {
                     <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          rotateCard(card.id);
+                          // Delegate to same action logic
+                          handleCardClick(card.id, 'hand');
                         }}
                         className="absolute bottom-1 right-1 p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
                     >

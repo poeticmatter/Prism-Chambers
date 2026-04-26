@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../../engine/store';
-import { useShallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 
 export function Header() {
   const restartGame = useStore(state => state.actions.restartGame);
