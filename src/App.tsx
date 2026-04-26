@@ -20,7 +20,6 @@ interface Card {
 
 interface BoardSlot {
   card: Card;
-  crystalProduced: boolean;
 }
 
 interface Location {
@@ -111,7 +110,7 @@ function createInitialState(): GameState {
   
   const board: (BoardSlot | null)[][] = [
     [null, null, null],
-    [null, { card: startCard, crystalProduced: true }, null],
+    [null, { card: startCard }, null],
     [null, null, null]
   ];
 
@@ -210,26 +209,6 @@ export default function App() {
           s.hand.push(oldSlot.card);
         }
 
-        const newSlot = s.board[targetY][targetX]!;
-        if (!newSlot.crystalProduced) {
-          // Not middle room for gems
-          if (!(targetX === 1 && targetY === 1)) {
-            let locCode = [...s.locations[targetY][targetX].code];
-            let cardCode = [...newSlot.card.code];
-
-            for (let cIdx = 0; cIdx < cardCode.length; cIdx++) {
-              let c = cardCode[cIdx];
-              let lIdx = locCode.indexOf(c);
-              if (lIdx !== -1) {
-                s.crystals[c]++;
-                locCode[lIdx] = 'U' as unknown as ColorStr; // consume it temporarily
-                if (!newSlot.card.revealedIndices.includes(cIdx)) newSlot.card.revealedIndices.push(cIdx);
-                if (!s.locations[targetY][targetX].revealedIndices.includes(lIdx)) s.locations[targetY][targetX].revealedIndices.push(lIdx);
-              }
-            }
-          }
-          newSlot.crystalProduced = true;
-        }
         return true;
       }
       return false;
@@ -243,12 +222,9 @@ export default function App() {
         if (cardIdx !== -1) {
           const card = sourceArr[cardIdx];
           sourceArr.splice(cardIdx, 1);
-          s.board[y][x] = { card, crystalProduced: false };
+          s.board[y][x] = { card };
           s.selectedCardId = null;
           s.selectedCardSource = null;
-
-          // Attempt auto-move
-          tryMove(s, x, y);
         }
       });
       return;
@@ -339,6 +315,31 @@ export default function App() {
     });
   };
 
+  const handleScanRoom = () => {
+    updateState(s => {
+      const { x, y } = s.playerPos;
+      const slot = s.board[y][x];
+      if (!slot) return;
+
+      const loc = s.locations[y][x];
+      const locCode = [...loc.code];
+      // Mark already-revealed location positions as consumed so they can't match again
+      loc.revealedIndices.forEach(i => { locCode[i] = 'U' as unknown as ColorStr; });
+
+      for (let cIdx = 0; cIdx < slot.card.code.length; cIdx++) {
+        if (slot.card.revealedIndices.includes(cIdx)) continue; // already known, no crystal
+        const c = slot.card.code[cIdx];
+        const lIdx = locCode.indexOf(c);
+        if (lIdx !== -1) {
+          s.crystals[c]++;
+          locCode[lIdx] = 'U' as unknown as ColorStr;
+          slot.card.revealedIndices.push(cIdx);
+          loc.revealedIndices.push(lIdx);
+        }
+      }
+    });
+  };
+
   const BorderColorMap: Record<ColorStr | 'U', string> = {
     'R': 'border-red-500',
     'G': 'border-green-500',
@@ -359,7 +360,7 @@ export default function App() {
     'B': 'text-blue-500',
   };
 
-  const renderCard = (card: Card, isPlayerHere: boolean, isBoard: boolean) => {
+  const renderCard = (card: Card, isPlayerHere: boolean, isBoard: boolean, onScan?: () => void, canScan?: boolean, location?: Location) => {
     return (
       <div className={cn(
         "relative w-full h-full bg-[#1e293b] border-2 rounded-lg shrink-0 flex flex-col items-center justify-center transition-all",
@@ -392,16 +393,43 @@ export default function App() {
             {card.code.map((c, i) => {
                const isRevealed = card.revealedIndices.includes(i);
                return (
-                  <div key={i} className={cn("w-3 h-3 rounded-full border", 
+                  <div key={i} className={cn("w-3 h-3 rounded-full border",
                       isRevealed ? cn(ColorMap[c], "shadow-[0_0_8px_currentColor] border-transparent") : "bg-slate-700/50 border-slate-600/50"
                   )} />
                )
             })}
           </div>
-          
+
+          {location && (
+            <>
+              <div className="text-[10px] uppercase tracking-wider opacity-60 mb-1 pointer-events-none text-slate-300">
+                Location
+              </div>
+              <div className="flex gap-1 mb-2">
+                {location.code.map((c, i) => {
+                  const isRevealed = location.revealedIndices.includes(i);
+                  return (
+                    <div key={i} className={cn("w-3 h-3 rounded-full border",
+                      isRevealed ? cn(ColorMap[c], "shadow-[0_0_8px_currentColor] border-transparent") : "bg-slate-700 border-slate-600"
+                    )} />
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           {isPlayerHere && (
-             <div className="flex flex-col items-center p-2 border border-slate-700 bg-slate-900 rounded w-full mt-auto">
+             <div className="flex flex-col items-center gap-1 p-2 border border-slate-700 bg-slate-900 rounded w-full mt-auto">
                <span className="text-[9px] uppercase font-bold text-sky-400">Player Present</span>
+               {onScan && (
+                 <button
+                   onClick={(e) => { e.stopPropagation(); onScan(); }}
+                   disabled={!canScan}
+                   className="w-full px-1 py-0.5 text-[8px] font-bold uppercase rounded border border-emerald-500/60 text-emerald-400 bg-emerald-900/30 hover:bg-emerald-900/60 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                 >
+                   {canScan ? 'Scan Room' : 'Scanned'}
+                 </button>
+               )}
              </div>
           )}
         </div>
@@ -494,7 +522,7 @@ export default function App() {
                           "absolute inset-[2px]", // slightly smaller than cell to show border of cell beneath
                           (isAdjacent && !state.selectedCardId) && "cursor-pointer hover:scale-105 transition-transform z-20"
                         )}>
-                            {renderCard(slot.card, isPlayerHere, true)}
+                            {renderCard(slot.card, isPlayerHere, true, handleScanRoom, slot.card.revealedIndices.length < slot.card.code.length && !(x === 1 && y === 1), loc)}
                         </div>
                     )}
 
@@ -567,7 +595,7 @@ export default function App() {
                 <span className="text-[10px] font-bold">ACTIVATE LASER</span>
                 <span className="text-[8px] opacity-70">Select crystal + Fire</span>
              </button>
-             <button 
+             <button
                 onClick={openTrapDoor}
                 disabled={!(state.playerPos.x === 1 && state.playerPos.y === 1)}
                 className="flex flex-col items-center justify-center border border-sky-500 text-sky-400 bg-sky-900/20 hover:bg-sky-900/40 disabled:opacity-50 disabled:cursor-not-allowed rounded p-2 transition text-center"
@@ -676,6 +704,43 @@ export default function App() {
         </aside>
 
       </div>
+
+      {state.gameState !== 'playing' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className={cn(
+            "flex flex-col items-center gap-6 rounded-2xl border-2 p-10 shadow-2xl max-w-sm w-full mx-4",
+            state.gameState === 'won'
+              ? "bg-emerald-950 border-emerald-400 shadow-[0_0_60px_rgba(52,211,153,0.3)]"
+              : "bg-red-950 border-red-400 shadow-[0_0_60px_rgba(248,113,113,0.3)]"
+          )}>
+            <div className={cn(
+              "text-5xl font-black tracking-tight",
+              state.gameState === 'won' ? "text-emerald-300" : "text-red-300"
+            )}>
+              {state.gameState === 'won' ? 'ESCAPED' : 'TRAPPED'}
+            </div>
+            <p className={cn(
+              "text-sm text-center",
+              state.gameState === 'won' ? "text-emerald-400" : "text-red-400"
+            )}>
+              {state.gameState === 'won'
+                ? 'The trap door codes matched. You have escaped the Prism Chambers.'
+                : 'The trap door codes did not match. The chamber has sealed permanently.'}
+            </p>
+            <button
+              onClick={() => setState(createInitialState())}
+              className={cn(
+                "px-6 py-2 rounded-lg font-bold uppercase text-sm tracking-wider transition-colors",
+                state.gameState === 'won'
+                  ? "bg-emerald-500 hover:bg-emerald-400 text-emerald-950"
+                  : "bg-red-500 hover:bg-red-400 text-red-950"
+              )}
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
