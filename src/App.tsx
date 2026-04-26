@@ -20,6 +20,7 @@ interface Card {
 
 interface BoardSlot {
   card: Card;
+  scanned: boolean;
 }
 
 interface Location {
@@ -37,6 +38,7 @@ interface GameState {
   selectedCardId: string | null;
   selectedCardSource: 'hand' | null;
   laserSelectedColor: ColorStr | null;
+  scanNoMatch: boolean;
 }
 
 const COLORS: ColorStr[] = ['R', 'G', 'B'];
@@ -84,7 +86,7 @@ function countMatches(c1: ColorStr[], c2: ColorStr[]) {
 // Generate initial state
 function createInitialState(): GameState {
   const pickedCodes = shuffle([...CODE_COMBOS]).slice(0, 9);
-  
+
   const locList = pickedCodes.map(c => ({ code: [...c], revealedIndices: [] }));
   const locations = [
     [locList[0], locList[1], locList[2]],
@@ -110,7 +112,7 @@ function createInitialState(): GameState {
   
   const board: (BoardSlot | null)[][] = [
     [null, null, null],
-    [null, { card: startCard }, null],
+    [null, { card: startCard, scanned: false }, null],
     [null, null, null]
   ];
 
@@ -123,7 +125,8 @@ function createInitialState(): GameState {
     gameState: 'playing',
     selectedCardId: null,
     selectedCardSource: null,
-    laserSelectedColor: null
+    laserSelectedColor: null,
+    scanNoMatch: false
   };
 }
 
@@ -199,12 +202,13 @@ export default function App() {
 
       if (outDoor.isOpen && inDoor.isOpen) {
         s.playerPos = { x: targetX, y: targetY };
+        s.scanNoMatch = false;
 
         const oldSlot = s.board[py][px]!;
         const oldLoc = s.locations[py][px];
         
-        // Discard old card if not perfect match
-        if (countMatches(oldSlot.card.code, oldLoc.code) !== 3) {
+        const isCentral = px === 1 && py === 1;
+        if (isCentral || countMatches(oldSlot.card.code, oldLoc.code) !== 3) {
           s.board[py][px] = null;
           s.hand.push(oldSlot.card);
         }
@@ -222,7 +226,7 @@ export default function App() {
         if (cardIdx !== -1) {
           const card = sourceArr[cardIdx];
           sourceArr.splice(cardIdx, 1);
-          s.board[y][x] = { card };
+          s.board[y][x] = { card, scanned: false };
           s.selectedCardId = null;
           s.selectedCardSource = null;
         }
@@ -323,20 +327,24 @@ export default function App() {
 
       const loc = s.locations[y][x];
       const locCode = [...loc.code];
-      // Mark already-revealed location positions as consumed so they can't match again
       loc.revealedIndices.forEach(i => { locCode[i] = 'U' as unknown as ColorStr; });
 
+      let hadMatch = false;
       for (let cIdx = 0; cIdx < slot.card.code.length; cIdx++) {
-        if (slot.card.revealedIndices.includes(cIdx)) continue; // already known, no crystal
+        if (slot.card.revealedIndices.includes(cIdx)) continue;
         const c = slot.card.code[cIdx];
         const lIdx = locCode.indexOf(c);
         if (lIdx !== -1) {
+          hadMatch = true;
           s.crystals[c]++;
           locCode[lIdx] = 'U' as unknown as ColorStr;
           slot.card.revealedIndices.push(cIdx);
           loc.revealedIndices.push(lIdx);
         }
       }
+
+      slot.scanned = true;
+      s.scanNoMatch = !hadMatch;
     });
   };
 
@@ -360,7 +368,7 @@ export default function App() {
     'B': 'text-blue-500',
   };
 
-  const renderCard = (card: Card, isPlayerHere: boolean, isBoard: boolean, onScan?: () => void, canScan?: boolean, location?: Location) => {
+  const renderCard = (card: Card, isPlayerHere: boolean, isBoard: boolean, onScan?: () => void, canScan?: boolean, location?: Location, scanNoMatch?: boolean) => {
     return (
       <div className={cn(
         "relative w-full h-full bg-[#1e293b] border-2 rounded-lg shrink-0 flex flex-col items-center justify-center transition-all",
@@ -429,6 +437,9 @@ export default function App() {
                  >
                    {canScan ? 'Scan Room' : 'Scanned'}
                  </button>
+               )}
+               {scanNoMatch && (
+                 <span className="text-[8px] text-amber-400 font-bold uppercase tracking-wide">No matches found</span>
                )}
              </div>
           )}
@@ -522,7 +533,7 @@ export default function App() {
                           "absolute inset-[2px]", // slightly smaller than cell to show border of cell beneath
                           (isAdjacent && !state.selectedCardId) && "cursor-pointer hover:scale-105 transition-transform z-20"
                         )}>
-                            {renderCard(slot.card, isPlayerHere, true, handleScanRoom, slot.card.revealedIndices.length < slot.card.code.length && !(x === 1 && y === 1), loc)}
+                            {renderCard(slot.card, isPlayerHere, true, handleScanRoom, !slot.scanned && !(x === 1 && y === 1), loc, isPlayerHere ? state.scanNoMatch : false)}
                         </div>
                     )}
 
